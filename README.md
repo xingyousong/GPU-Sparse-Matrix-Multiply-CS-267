@@ -9,3 +9,8 @@ Testing, Analysis and Applications of OpenAI's GPU sparse block kernel: https://
 #### CuSPARSE: https://developer.nvidia.com/cusparse
 #### Block-Sparse-GPU: https://github.com/openai/blocksparse
 #### CUSP: https://github.com/cusplibrary/cusplibrary
+
+
+# Old Ideas:
+
+#### TorchMPI: https://github.com/facebookresearch/TorchMPI
