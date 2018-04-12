@@ -1,0 +1,24 @@
+## Notes from Aydin Meeting 4/10/18
+
+Erdos Renyi - uniform random 
+RMAXT (scale-free) 
+
+
+
+
+SPegmm experiments (C = AxB)
+x-axis density (ratio of non-zeros) 
+y-axis runtime (GFlops) check timing for dPEGMM CUSPARSE OPENAI 
+
+AlexNet
+
+
+CUSP is open
+CuSparse is NOT OPEN 
+
+
+SpMV - sparse matrix x dense vector
+SpGEMM - sparse matrix x sparse matrix
+SpMM - sparse matrix to multiple dense vectors 
+
+
