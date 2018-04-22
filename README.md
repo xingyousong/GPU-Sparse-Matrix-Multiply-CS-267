@@ -10,6 +10,16 @@ Testing, Analysis and Applications of OpenAI's GPU sparse block kernel: https://
 #### Block-Sparse-GPU: https://github.com/openai/blocksparse
 #### CUSP: https://github.com/cusplibrary/cusplibrary
 
+# Python Wrappers:
+
+#### cuSPARSE - pyculib: https://github.com/numba/pyculib
+#### cuBLAS - cupy: https://github.com/cupy/cupy
+
+## Failed Wrappers:
+#### cuSPARSE - julia: https://github.com/JuliaGPU/CUSPARSE.jl
+#### cuSPARSE - skcuda: https://github.com/lebedov/scikit-cuda/tree/master/skcuda
+
+
 
 # Old Ideas:
 
