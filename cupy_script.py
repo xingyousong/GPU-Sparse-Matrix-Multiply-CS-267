@@ -9,7 +9,7 @@ import pandas as pd
 import os 
 
 #----- sparseCSR x sparseCSR
-
+"""
 temp_dict = {}
 
 for i in range(4, 15):
@@ -34,7 +34,7 @@ for i in range(4, 15):
 
 ssd = pd.DataFrame(data=temp_dict)
 ssd.to_csv("cublas_sparseCSR_sparseCSR.csv")
-
+"""
 
 
 #----- sparseD x sparseD
@@ -70,7 +70,7 @@ ssd.to_csv("cublas_sparseD_sparseD.csv")
 
 #----- sparseCSR x dense 
 
-
+"""
 temp_dict = {}
 for i in range(4, 15):
     for p in [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]: 
@@ -95,7 +95,7 @@ for i in range(4, 15):
 ssd = pd.DataFrame(data=temp_dict)
 ssd.to_csv("cublas_sparseCSR_dense.csv")
 
-
+"""
 
 #------- sparseD x dense
 temp_dict = {}
@@ -126,7 +126,7 @@ ssd.to_csv("cublas_sparseD_dense.csv")
 
 
 #-------- sparseCSR x dense vector 
-
+"""
 temp_dict = {}
 for i in range(4, 15):
     for p in [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]: 
@@ -151,7 +151,7 @@ for i in range(4, 15):
 ssd = pd.DataFrame(data=temp_dict)
 ssd.to_csv("cublas_sparseCSR_denseVector.csv")
 
-
+"""
 
 #-------- sparseD x dense vector 
 
