@@ -15,12 +15,6 @@ Testing, Analysis and Applications of OpenAI's GPU sparse block kernel: https://
 #### cuSPARSE - pyculib: https://github.com/numba/pyculib
 #### cuBLAS - cupy: https://github.com/cupy/cupy
 
-## Failed Wrappers:
-#### cuSPARSE - julia: https://github.com/JuliaGPU/CUSPARSE.jl
-#### cuSPARSE - skcuda: https://github.com/lebedov/scikit-cuda/tree/master/skcuda
-
-
-
 # Old Ideas:
 
 #### TorchMPI: https://github.com/facebookresearch/TorchMPI
@@ -37,3 +31,6 @@ Perform (sparse) matrix- (dense)matrix multiplication or (sparse) matrix vector 
 
 Do this for CuSPARSE, CUSP, CuBLAS. 
 
+## Failed Wrappers:
+#### cuSPARSE - julia: https://github.com/JuliaGPU/CUSPARSE.jl
+#### cuSPARSE - skcuda: https://github.com/lebedov/scikit-cuda/tree/master/skcuda
