@@ -26,6 +26,9 @@ thrust::plus<int> reduce;
 ofstream outputFile;
 
 const double p[] = {0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5};
+const double pSparse[] = {0.00001, 0.0001, 0.001, 0.005};
+
+const double allP[] = {0.00001, 0.0001, 0.001, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5};
 
 int csrTimesCsr() {
         outputFile.open("cusp_csvs/cusp_csr_csr.csv");
@@ -45,6 +48,54 @@ int csrTimesCsr() {
                         clock_t diff = clock() - start;
                         float sec = ((float) diff) / CLOCKS_PER_SEC;
                         outputFile << N << "," << p[j] << "," << std::setprecision(15) << sec << "\n";
+                }
+        }
+        outputFile.close();
+        return 1;
+}
+
+int csrTimesCsrSparse() {
+        outputFile.open("cusp_csvs/cusp_csr_csr_sparse.csv");
+        for (int i = 4; i < 15; i++) {
+                int N = pow(2, i);
+                for (int j = 0; j < 4; j++) {
+                        cusp::csr_matrix<int, int, cusp::device_memory> X_GPU;
+                        cusp::csr_matrix<int, int, cusp::device_memory> Y_GPU;
+                        int num_samples = ((int) (pSparse[j] * N * N));
+                        cout << "N is: " << N << " density is " << pSparse[j];
+                        cout << "\nNum Samples: " << num_samples << "\n";
+                        cusp::gallery::random(X_GPU, N, N, num_samples);
+                        cusp::gallery::random(Y_GPU, N, N, num_samples);
+                        cusp::csr_matrix<int, int, cusp::device_memory> Z;
+                        clock_t start = clock();
+                        cusp::generalized_spgemm(X_GPU, Y_GPU, Z, zero, combine, reduce);
+                        clock_t diff = clock() - start;
+                        float sec = ((float) diff) / CLOCKS_PER_SEC;
+                        outputFile << N << "," << pSparse[j] << "," << std::setprecision(15) << sec << "\n";
+                }
+        }
+        outputFile.close();
+        return 1;
+}
+
+int csrTimesCsrHigherN() {
+        outputFile.open("cusp_csvs/cusp_csr_csr_highN.csv");
+        for (int i = 15; i < 20; i++) {
+                int N = pow(2, i);
+                for (int j = 0; j < 18; j++) {
+                        cusp::csr_matrix<int, int, cusp::device_memory> X_GPU;
+                        cusp::csr_matrix<int, int, cusp::device_memory> Y_GPU;
+                        int num_samples = ((int) (allP[j] * N * N));
+                        cout << "N is: " << N << " density is " << allP[j];
+                        cout << "\nNum Samples: " << num_samples << "\n";
+                        cusp::gallery::random(X_GPU, N, N, num_samples);
+                        cusp::gallery::random(Y_GPU, N, N, num_samples);
+                        cusp::csr_matrix<int, int, cusp::device_memory> Z;
+                        clock_t start = clock();
+                        cusp::generalized_spgemm(X_GPU, Y_GPU, Z, zero, combine, reduce);
+                        clock_t diff = clock() - start;
+                        float sec = ((float) diff) / CLOCKS_PER_SEC;
+                        outputFile << N << "," << allP[j] << "," << std::setprecision(15) << sec << "\n";
                 }
         }
         outputFile.close();
@@ -75,6 +126,58 @@ int csrTimesDenseVector() {
          }
          outputFile.close();
          return 1;
+}
+
+int csrTimesDenseVectorSparse() {
+     ofstream outputFile;
+     outputFile.open("cusp_csvs/cusp_csr_denseVec_sparse.csv");
+     for(int i = 4; i < 15; i++) {
+             int N = pow(2, i);
+             for(int j = 0; j < 4; j++) {
+                 cusp::csr_matrix<int, int, cusp::device_memory> X_GPU;
+                 cusp::csr_matrix<int, int, cusp::device_memory> Y_GPU;
+                 int num_samples = ((int) (pSparse[j] * N * N));
+                 int randomNum = rand() % N;
+                 cout << "N is: " << N << " density is " << pSparse[j];
+                 cout << "\nNum Samples: " << num_samples << "\n";
+                 cusp::gallery::random(X_GPU, N, N, num_samples);
+                 cusp::gallery::random(Y_GPU, N, 1, randomNum);
+                 cusp::csr_matrix<int, int, cusp::device_memory> Z;
+                 clock_t start = clock();
+                 cusp::generalized_spgemm(X_GPU, Y_GPU, Z, zero, combine, reduce);
+                 clock_t diff = clock() - start;
+                 float sec = ((float) diff) / CLOCKS_PER_SEC;
+                 outputFile << N << "," << pSparse[j] << "," << std::setprecision(15) << sec << "\n";
+             }
+     }
+     outputFile.close();
+     return 1;
+}
+
+int csrTimesDenseVectorHigherN() {
+     ofstream outputFile;
+     outputFile.open("cusp_csvs/cusp_csr_denseVec_highN.csv");
+     for(int i = 15; i < 20; i++) {
+             int N = pow(2, i);
+             for(int j = 0; j < 18; j++) {
+                 cusp::csr_matrix<int, int, cusp::device_memory> X_GPU;
+                 cusp::csr_matrix<int, int, cusp::device_memory> Y_GPU;
+                 int num_samples = ((int) (allP[j] * N * N));
+                 int randomNum = rand() % N;
+                 cout << "N is: " << N << " density is " << allP[j];
+                 cout << "\nNum Samples: " << num_samples << "\n";
+                 cusp::gallery::random(X_GPU, N, N, num_samples);
+                 cusp::gallery::random(Y_GPU, N, 1, randomNum);
+                 cusp::csr_matrix<int, int, cusp::device_memory> Z;
+                 clock_t start = clock();
+                 cusp::generalized_spgemm(X_GPU, Y_GPU, Z, zero, combine, reduce);
+                 clock_t diff = clock() - start;
+                 float sec = ((float) diff) / CLOCKS_PER_SEC;
+                 outputFile << N << "," << allP[j] << "," << std::setprecision(15) << sec << "\n";
+             }
+     }
+     outputFile.close();
+     return 1;
 }
 
 int csrTimesDenseMatrix() {
@@ -111,12 +214,83 @@ int csrTimesDenseMatrix() {
     return 1;
 }
 
+int csrTimesDenseMatrixSparse() {
+    typedef cusp::csr_matrix<int, float, cusp::device_memory>             Matrix;
+    typedef cusp::array1d<float, cusp::device_memory>                     Array1d;
+    typedef cusp::array2d<float, cusp::device_memory, cusp::column_major> Array2d;
+    typedef Array2d::column_view column_view;
 
+    ofstream outputFile;
+    outputFile.open("cusp_csvs/cusp_csr_denseMat_sparse.csv");
 
+    for (int i = 4; i < 15; i++) {
+        int N = pow(2, i);
+        for(int j = 0; j < 4; j++) {
+            Matrix A;
+            int num_samples = ((int) (pSparse[j] * N * N));
+            int randomNum = rand() % N;
+            cusp::gallery::random(A, N, N, num_samples);
+
+            Array2d X(N, N);
+            cusp::gallery::random(X, N, N, randomNum);
+            Array1d y(N);
+
+            column_view x = X.column(0);
+            cout << "N is: " << N << " density is " << pSparse[j];
+            cout << "\nNum Samples: " << num_samples << "\n";
+            clock_t start = clock();
+            cusp::multiply(A, x, y);
+            clock_t diff = clock() - start;
+            float sec = ((float) diff) / CLOCKS_PER_SEC;
+            outputFile << N << "," << pSparse[j] << "," << std::setprecision(15) << sec << "\n";
+        }
+    }
+    return 1;
+}
+
+int csrTimesDenseMatrixHigherN() {
+    typedef cusp::csr_matrix<int, float, cusp::device_memory>             Matrix;
+    typedef cusp::array1d<float, cusp::device_memory>                     Array1d;
+    typedef cusp::array2d<float, cusp::device_memory, cusp::column_major> Array2d;
+    typedef Array2d::column_view column_view;
+
+    ofstream outputFile;
+    outputFile.open("cusp_csvs/cusp_csr_denseMat_highN.csv");
+
+    for (int i = 15; i < 20; i++) {
+        int N = pow(2, i);
+        for(int j = 0; j < 18; j++) {
+            Matrix A;
+            int num_samples = ((int) (allP[j] * N * N));
+            int randomNum = rand() % N;
+            cusp::gallery::random(A, N, N, num_samples);
+
+            Array2d X(N, N);
+            cusp::gallery::random(X, N, N, randomNum);
+            Array1d y(N);
+
+            column_view x = X.column(0);
+            cout << "N is: " << N << " density is " << allP[j];
+            cout << "\nNum Samples: " << num_samples << "\n";
+            clock_t start = clock();
+            cusp::multiply(A, x, y);
+            clock_t diff = clock() - start;
+            float sec = ((float) diff) / CLOCKS_PER_SEC;
+            outputFile << N << "," << allP[j] << "," << std::setprecision(15) << sec << "\n";
+        }
+    }
+    return 1;
+}
 
 int main() {
-        csrTimesCsr();
-        csrTimesDenseVector();
-        csrTimesDenseMatrix();
+        //csrTimesCsr();
+        //csrTimesDenseVector();
+        //csrTimesDenseMatrix();
+        csrTimesCsrSparse();
+        csrTimesDenseVectorSparse();
+        csrTimesDenseMatrixSparse();
+        csrTimesDenseMatrixHigherN();
+        csrTimesCsrHigherN();
+        csrTimesDenseVectorHigherN();
         system("sudo shutdown -P now");
 }
