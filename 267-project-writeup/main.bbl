@@ -1,0 +1,57 @@
+\begin{thebibliography}{MGG12}
+
+\bibitem[BDO12]{multigrid}
+Nathan Bell, Steven Dalton, and Luke~N. Olson.
+\newblock Exposing fine-grained parallelism in algebraic multigrid methods.
+\newblock {\em {SIAM} J. Scientific Computing}, 34(4), 2012.
+
+\bibitem[BG08]{spmv_cuda}
+Nathan Bell and Michael Garland.
+\newblock Efficient sparse matrix-vector multiplication on {CUDA}.
+\newblock NVIDIA Technical Report NVR-2008-004, NVIDIA Corporation, December
+  2008.
+
+\bibitem[BG11]{spgemm}
+Aydin Buluc and John~R. Gilbert.
+\newblock Parallel sparse matrix-matrix multiplication and indexing:
+  Implementation and experiments.
+\newblock {\em CoRR}, abs/1109.3739, 2011.
+
+\bibitem[DOB15]{bell_spmm}
+Steven Dalton, Luke Olson, and Nathan Bell.
+\newblock Optimizing sparse matrix\&mdash;matrix multiplication for the gpu.
+\newblock {\em ACM Trans. Math. Softw.}, 41(4):25:1--25:20, October 2015.
+
+\bibitem[HGY07]{benchmark}
+James~Demmel Hormozd~Gahvari, Mark~Hoemmen and Katherine Yelick.
+\newblock Benchmarking sparse matrix-vector multiply in five minutes.
+\newblock {\em SPEC Benchmark Workshop}, January 2007.
+
+\bibitem[HKS09]{4-way}
+Linh Ha, Jens Krüger, and Cláudio~T. Silva.
+\newblock Fast 4-way parallel radix sorting on gpus, 2009.
+
+\bibitem[MG11]{sort}
+DUANE MERRILL and ANDREW GRIMSHAW.
+\newblock High performance and scalable radix sorting: A case study of
+  implementing dynamic parallelism for gpu computing.
+\newblock {\em Parallel Processing Letters}, 21(02):245--272, 2011.
+
+\bibitem[MGG12]{bfs_gpu}
+Duane Merrill, Michael Garland, and Andrew Grimshaw.
+\newblock Scalable gpu graph traversal.
+\newblock In {\em Proceedings of the 17th ACM SIGPLAN Symposium on Principles
+  and Practice of Parallel Programming}, PPoPP '12, pages 117--128, New York,
+  NY, USA, 2012. ACM.
+
+\bibitem[SGK17]{blocksparse}
+Alec~Radford Scott~Gray and Diederik~P. Kingma.
+\newblock Gpu kernels for block-sparse weights.
+\newblock December 2017.
+
+\bibitem[TV06]{singular}
+Terence Tao and Van Vu.
+\newblock On random \&plusmn;1 matrices: Singularity and determinant.
+\newblock {\em Random Struct. Algorithms}, 28(1):1--23, January 2006.
+
+\end{thebibliography}
