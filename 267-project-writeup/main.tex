@@ -49,7 +49,7 @@
 
 To avoid confusion, there are separate naming conventions for each case when dealing with matrix multiplication. These are: 
 \begin{itemize}
-\item SpMV - (Sparse Matrix) $\times$ (Dense Vector) - Multiplications of form $M \cdot b$, where $M$ is a sparse matrix, and $b$ is a 1-d vector with any set of non-zero entries.
+\item SpMV - (Sparse Matrix) $\times$ (Dense Vector) - Multiplications of form $M \cdot b$, where $M$ is a sparse matrix, and $b$ is a vector with any set of non-zero entries.
 \item (Sparse Matrix) $\times$ (Dense Matrix) - Multiplications of form $M \cdot N$, where $M$ is a sparse matrix, and $N$ is a matrix built by multiple dense vectors. 
 \item SpMM or SpGEMM (Sparse Matrix) $\times$ (Sparse Matrix) - Multiplications of form $M \cdot N$, where $M,N$ are both sparse matrices. 
 \end{itemize}
@@ -64,7 +64,7 @@ Note that the libraries of interest, where each library may support some (or all
 \hspace{0.5cm}We tested the runtimes of these sparse matrix multiplication algorithms on matrices of various sparsities and dimensions. Our code can be found on: \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267}.\\ We also considered the following libraries. However, in the interest of time, and because many open-source libraries are \textit{extremely} error-prone and unstable, we did not fully test them: \footnote{A large portion of our time was used in setting up different environments, because almost all open-source libraries are poorly documented, or have bugs.}
 \begin{itemize}
 \item bhSPARSE - Recent Modifications to original libraries: \url{https://github.com/bhSPARSE/bhSPARSE}
-\item OpenAI Blocksparse - Open Source library for special "block-sparse" matrices: \url{https://github.com/openai/blocksparse} \footnote{We attempted to install all variants and versions on PSU XSEDE, Amazon AWS with Nvidia Tesla K80 (p2x.large instance), Amazon AWS with Nvidia Tesla P100 (p3x.large instance), Google Cloud Computing API with Nvidia Tesla P100, with no success on any of them}
+\item OpenAI Blocksparse - Open Source library for special "block-sparse" matrices: \url{https://github.com/openai/blocksparse} \footnote{We attempted to install all variants and versions on PSC XSEDE, Amazon AWS with Nvidia Tesla K80 (p2x.large instance), Amazon AWS with Nvidia Tesla P100 (p3x.large instance), Google Cloud Computing API with Nvidia Tesla P100, with no success on any of them}
 \end{itemize}
 
 To assist in readability in code, we used some wrapper libraries:
@@ -80,10 +80,10 @@ The wrapper libraries that we attempted to use, but obsolete or failed are:
 \end{itemize}
 
 \section{Algorithmic Methods}
-\hspace{0.5cm}In this section, we explain how SpMV and SpMM work.
+\hspace{0.5cm}In this section, we explain how SpMV and SpMM work on GPU architectures.
 
 \subsection{SpMV}
-\hspace{0.5cm}From \cite{spmv_cuda}, there is an emphasis on the format representation of sparsity, which in turn is used to consider the appropriate GPU method. The goal is to compute $M \cdot b$. 3 methods are shown: 
+\hspace{0.5cm}From \cite{spmv_cuda}, there is an emphasis on the format representation of sparsity, which in turn is used to consider the appropriate GPU method. The goal is to compute $M \cdot b$, where $M$ is a sparse matrix and $b$ is a dense vector. 3 methods are shown: 
 
 \begin{itemize}
 \item Diagonal format (structure specific) - For matrices $M$ whose elements are dominant on diagonals (close to the main diagonal), the matrix can represented by forming a data matrix (with zero-elements replaced as a "*" character), and an offset vector. The elements on the k-th column of the data matrix $D$ are matched with the k-th element of the offset vector, which specifies the diagonal on $M$. The elements on the data matrix are also row-aligned (i.e. elements of the same row in $M$ will also be in the same row in $D$). 
@@ -107,16 +107,16 @@ The wrapper libraries that we attempted to use, but obsolete or failed are:
 \end{figure}
 \hspace{0.5cm}For GPU computation, the method is the same as the Diagonal format, where each thread is assigned to a row and computes the dot-product, but instead using the index matrix as a hash for locations (and therefore accesses the index matrix contiguously).
 
-\hspace{0.5cm}The performance of this relies on the fact that overall, most of the rows all have $Z$ elements (i.e. balanced numbers of elements on the rows), which load-balances the work performed on each thread.
+\hspace{0.5cm}The performance of this relies on the fact that overall, most of the rows have $Z$ elements (i.e. balanced numbers of elements on the rows), which load-balances the work performed on each thread.
 
 
-\item Coordinate format - The most widely used and well known format being the CSR (compressed sparse row), the matrix $M$ is represented by ptr, indices, and data vectors which specify the offset on each row that has elements (with last element being the number of non-zero elements), along with the distinct rows, and data elements, respectively. 
+\item Coordinate format - The most widely used and well known format for representing sparse matrices is CSR (compressed sparse row). The matrix $M$ is represented by ptr, indices, and data vectors which specify the offset on each row that has elements (with last element being the number of non-zero elements), along with the distinct rows, and data elements, respectively. 
 \begin{figure}[h]
   \caption{CSR example format}
   \centering 
   \includegraphics[width = 0.65\textwidth]{CSR.png}
 \end{figure}
-For the SpMV operation, the "vector kernel" is introduced, where an entire thread block may be assigned to each matrix row, whose entries are then partitioned equally among the threads, with a final parallel reduce operation to compute the dot product between the matrix row and vector. 
+\\For the SpMV operation, the "vector kernel" is introduced, where an entire thread block may be assigned to each matrix row, whose entries are then partitioned equally among the threads, with a final parallel reduce operation to compute the dot product between the matrix row and vector. 
 \end{itemize}
 
 
@@ -168,7 +168,7 @@ For the SpMV operation, the "vector kernel" is introduced, where an entire threa
 \item Nvidia Tesla K80 
 \item 11.75 ECUs, 4 vCPUs, 2.7 GHz, Intel Broadwell E5-2686v4, 61 GiB memory, EBS only, with Intel AVX and Turbo allowed. 
 \end{itemize}
-For the Nvidia K80 GPUs, the memory bandwith is relatively larger than other GPUs of similar cost (480 GB/s vs 288 GB/s on a Tesla K40) 
+\hspace{0.5cm}For the Nvidia K80 GPUs, the memory bandwith is relatively larger than other GPUs of similar cost (480 GB/s vs 288 GB/s on a Tesla K40) 
 
 \subsection{Erdos-Renyi}
 \hspace{0.5cm}At first, we tested spare matrix multiplication on $N \times N$ square matrices, where each element of the matrix was non-zero with probability $p$. We varied the matrix dimensions and sparsities as such: 
