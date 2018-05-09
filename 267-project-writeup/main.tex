@@ -12,6 +12,7 @@
 \usepackage{hyperref}
 \newcommand{\N}{\mathbb{N}}
 \newcommand{\Z}{\mathbb{Z}}
+\setlength\parindent{15pt}
  
 \newenvironment{theorem}[2][Theorem]{\begin{trivlist}
 \item[\hskip \labelsep {\bfseries #1}\hskip \labelsep {\bfseries #2.}]}{\end{trivlist}}
@@ -43,15 +44,14 @@
 \maketitle
 
 \section{Introduction}
-Our code can be found on: \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267}.
 
-GPU-assisted sparse matrix operations have been well-known for a long time. In this report, we discuss the approaches of many of the well-known algorithms and perform experiments to benchmark and compare their performances on both random matrix-matrix multiplication. 
+\hspace{0.5cm}GPU-assisted sparse matrix operations have been well-known for a long time. In this report, we discuss the approaches of many of the well-known algorithms and perform experiments to benchmark and compare their performances on randomly generated matrices as well as matrices from matrix datasets.
 
-To avoid confusion, are separate naming conventions for each case when dealing with matrix-multiplication. These are: 
+To avoid confusion, there are separate naming conventions for each case when dealing with matrix multiplication. These are: 
 \begin{itemize}
 \item SpMV - (Sparse Matrix) $\times$ (Dense Vector) - Multiplications of form $M \cdot b$, where $M$ is a sparse matrix, and $b$ is a 1-d vector with any set of non-zero entries.
-\item SpMM - (Sparse Matrix) $\times$ (Multiple Dense Vectors) - Multiplications of form $M \cdot N$, where $M$ is a sparse matrix, and $N$ is a matrix built by multiple dense vectors. 
-\item SpGEMM (Sparse Matrix) $\times$ (Sparse Matrix) - Multiplications of form $M \cdot N$, where $M,N$ are both sparse matrices. 
+\item (Sparse Matrix) $\times$ (Dense Matrix) - Multiplications of form $M \cdot N$, where $M$ is a sparse matrix, and $N$ is a matrix built by multiple dense vectors. 
+\item SpMM, or SpGEMM (Sparse Matrix) $\times$ (Sparse Matrix) - Multiplications of form $M \cdot N$, where $M,N$ are both sparse matrices. 
 \end{itemize}
 
 Note that the libraries of interest, where each library may support some (or all) of these operations are:
@@ -61,8 +61,7 @@ Note that the libraries of interest, where each library may support some (or all
 \item CuSPARSE - Production-level library: \url{https://developer.nvidia.com/cusparse} \footnote{Production libraries do not present the source code.}
 \item CuBLAS - Production-level library: \url{https://developer.nvidia.com/cublas}
 \end{itemize}
-
-In the interest of time (as well as the fact that many open-source libraries are \textit{extremely} error-prone and unstable), we also considered the following libraries, but did not fully implement them due to heavy installation errors: \footnote{A large portion of our time was used in setting up different environments, because almost all open-source libraries are poorly documented, or have bugs.}
+\hspace{0.5cm}We tested the runtimes of these sparse matrix multiplication algorithms on matrices of various sparsities and dimensions. Our code can be found on: \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267}.\\ We also considered the following libraries. However, in the interest of time, and because many open-source libraries are \textit{extremely} error-prone and unstable, we did not fully test them: \footnote{A large portion of our time was used in setting up different environments, because almost all open-source libraries are poorly documented, or have bugs.}
 \begin{itemize}
 \item bhSPARSE - Recent Modifications to original libraries: \url{https://github.com/bhSPARSE/bhSPARSE}
 \item OpenAI Blocksparse - Open Source library for special "block-sparse" matrices: \url{https://github.com/openai/blocksparse} \footnote{We attempted to install all variants and versions on PSU XSEDE, Amazon AWS with Nvidia Tesla K80 (p2x.large instance), Amazon AWS with Nvidia Tesla P100 (p3x.large instance), Google Cloud Computing API with Nvidia Tesla P100, with no success on any of them}
@@ -81,10 +80,10 @@ The wrapper libraries that we attempted to use, but obsolete or failed are:
 \end{itemize}
 
 \section{Algorithmic Methods}
-In this section we explain the common methods for sparse matrix multiplication, and link which methods to the correct libraries.
+\hspace{0.5cm}In this section, we explain how SpMV and SpGEMM work.
 
 \subsection{SpMV}
-From \cite{spmv_cuda}, there is an emphasis on the format representation of sparsity, which in turn is used to consider the appropriate GPU method. The goal is to compute $M \cdot b$. 3 methods are shown: 
+\hspace{0.5cm}From \cite{spmv_cuda}, there is an emphasis on the format representation of sparsity, which in turn is used to consider the appropriate GPU method. The goal is to compute $M \cdot b$. 3 methods are shown: 
 
 \begin{itemize}
 \item Diagonal format (structure specific) - For matrices $M$ whose elements are dominant on diagonals (close to the main diagonal), the matrix can represented by forming a data matrix (with zero-elements replaced as a "*" character), and an offset vector. The elements on the k-th column of the data matrix $D$ are matched with the k-th element of the offset vector, which specifies the diagonal on $M$. The elements on the data matrix are also row-aligned (i.e. elements of the same row in $M$ will also be in the same row in $D$). 
@@ -97,7 +96,7 @@ From \cite{spmv_cuda}, there is an emphasis on the format representation of spar
 
 
 
-For GPU computation, each thread $t$ will be responsible for computing the $t$-th element on the output (i.e. dot product between row $t$ in $M$ with the input vector). Because of the row alignment, each thread will contiguously access data along the row, incrementing the final output with $+= M[t][i]*B[i] $ for all $i$. 
+\hspace{0.5cm}For GPU computation, each thread $t$ will be responsible for computing the $t$-th element on the output (i.e. dot product between row $t$ in $M$ with the input vector). Because of the row alignment, each thread will contiguously access data along the row, incrementing the final output by $ A[t][i]*B[i] $ for all $i$. 
 \item ELLPACK format - This format is a general format, under the assumption that each row has a maximum of $Z$ non-zero elements in $M$. Intuitively, this then compacts $M$ into a data matrix, where each row $r$ of the data matrix is the list of non-zero elements of the row $r$ in $M$. The $r$-th row in the index matrix lists the column-coordinates of the elements in data at row $r$ with the elements in $M$. 
 
 
@@ -106,12 +105,12 @@ For GPU computation, each thread $t$ will be responsible for computing the $t$-t
   \centering 
   \includegraphics[width = 0.65\textwidth]{ellpack.png}
 \end{figure}
-For GPU computation, the method is the same as the Diagonal format, where each thread is assigned to a row and computes the dot-product, but instead using the index matrix as a hash for locations (and therefore accesses the index matrix continguously)
+\hspace{0.5cm}For GPU computation, the method is the same as the Diagonal format, where each thread is assigned to a row and computes the dot-product, but instead using the index matrix as a hash for locations (and therefore accesses the index matrix contiguously).
 
-The performance of this relies on the fact that overall, most of the rows all have $Z$ elements (i.e. balanced numbers of elements on the rows), which load-balances the work performed on each thread.
+\hspace{0.5cm}The performance of this relies on the fact that overall, most of the rows all have $Z$ elements (i.e. balanced numbers of elements on the rows), which load-balances the work performed on each thread.
 
 
-\item Coordinate format - The most widely used and well known format being the CSR (compressed sparse row), the matrix $M$ is represented by ptr, indices, and data vectors which specify the offset on each row that has elements (with last element being the number of NNZ's), along with the distinct rows, and data elements, respectively. 
+\item Coordinate format - The most widely used and well known format being the CSR (compressed sparse row), the matrix $M$ is represented by ptr, indices, and data vectors which specify the offset on each row that has elements (with last element being the number of non-zero elements), along with the distinct rows, and data elements, respectively. 
 \begin{figure}[h]
   \caption{CSR example format}
   \centering 
@@ -124,28 +123,28 @@ For the SpMV operation, the "vector kernel" is introduced, where an entire threa
 
 
 \subsection{SpMM}
-In \cite{bell_spmm}, the algorithm is decomposed into 3 portions, assuming the input is $A, B$ and the output is $C = A \cdot B$. We also assume  $A,B$ are expressed in CSR (Compressed Sparse Row) format. The 3 portions are then the "expand, sort, compress" (ESC) methods, similar to a Map-Reduce technique, as explained below. 
+\hspace{0.5cm}In \cite{bell_spmm}, the algorithm is decomposed into 3 portions, assuming the inputs are $A$ and $B$ and the output is $C = A \cdot B$. We also assume  $A$ and $B$ are expressed in CSR (Compressed Sparse Row) format. The 3 portions are then the "expand, sort, compress" (ESC) methods, similar to a Map-Reduce technique, as explained below. 
 
 \begin{figure}[h]
-  \caption{Example of the 3 techniques, when $C$ is generated from $A,B$ which are in CSR format. }
+  \caption{Example of the 3 techniques, when $C$ is generated from $A$ and $B$, which are both in CSR format. }
   \centering 
   \includegraphics[width = 0.65\textwidth]{expand_sort_compress.png}
 \end{figure}
 
 \begin{itemize}
-\item Expand: This generates all possible pairings $(A_{ik}, B_{kj})$ which are used to add to a position $C_{ij} += A_{ik}*B_{kj}$. The generation process can be viewed as forming all-pairs paths on a bipartite graph. More specifically, for a matrix $M$, the bottom side of the graph consists of vertices, each representing a row, while the top side's vertices represent the columns, with a connection (a,b) if the element $M_{ab}$ is non-zero. Then conjoining the bipartite graphs $A,B$ makes it convenient to see that the total number of pairings $(A_{ik}, B_{kj})$ is the number of length-2 paths. 
+\item Expand: This generates all possible pairings $(A_{ik}, B_{kj})$ which are used to add to a position $C_{ij} += A_{ik}*B_{kj}$. The generation process can be viewed as forming all-pairs paths on a bipartite graph. More specifically, for a matrix $M$, the bottom side of the graph consists of vertices, each representing a row, while the top side's vertices represent the columns, with a connection (a,b) if the element $M_{ab}$ is non-zero. Then, conjoining the bipartite graphs $A$ and $B$ makes it convenient to see that the total number of pairings $(A_{ik}, B_{kj})$ is the number of length-2 paths. 
 
 \begin{figure}[h]
   \caption{Example figure of expansion bipartite graphs}
   \centering 
   \includegraphics[width = 0.65\textwidth]{bipartite_MM.png}
 \end{figure}
-Thus, using out all length-2 paths corresponds to a "BFS"-type tracking on this path, from which well-known GPU graph traversal methods are used. In the GPU case, the best method would be for each thread to possess a starting node at the bottom side of the bipartite graph corresponding to $A$. A given core then selects $T$ consecutive bottom vertices, and the total vertices are partitioned by cores. Each thread $t$ then computes the "expansion" (i.e. all possible paths from its vertex $v_{t}$ including the products associated with a path), using techniques found in \cite{bfs_gpu}. 
-\item Sort: This method sorts lexicographically each element $(x,y, c)$ generated from before, where $x,y$ corresponds to location $(x,y)$ in $C$, and $c$ is to be incremented to $C_{xy}$. This method is used to assist the compress portion, which is used to remove duplicate/increment $(x,y)$ coordinate entries. Sorting is cited as the most computationally expensive configuration, and the algorithm to invoke derives from the work \cite{sort}. The baseline algorithm is an inspired GPU-based Radix Sort, found in Thrust's \code{stable\_sort\_by\_key} algorithm. Here, the number of threads is proportional to the number of elements in the expansion, and the total elements is partitioned equally for each thread, (over same rows) with each thread sorting only its sub partition. All of the sorted sub partitions are then collected within the block shared memory, and then re-sorted within the entire block, which sorts an entire row.  
+\hspace{0.5cm}Thus, using all length-2 paths corresponds to a "BFS"-type tracking on this path, for which well-known GPU graph traversal methods are used. In the GPU case, the best method would be for each thread to possess a starting node at the bottom side of the bipartite graph corresponding to $A$. All bottom vertices are partitioned according to which core they are given to. Each thread $t$ then computes the "expansion" (i.e. all possible paths from its vertex $v_{t}$ including the products associated with a path), using techniques found in \cite{bfs_gpu}. 
+\item Sort: This method lexicographically sorts each element $(x,y, c)$ generated from before, where $x,y$ corresponds to a location $(x,y)$ in $C$, and $c$ is to be incremented to $C_{xy}$. This method is used to assist the compress portion, which is used to remove duplicate $(x,y)$ coordinate entries. Sorting is cited as the most computationally expensive configuration. The algorithm to invoke during this stage derives from the work \cite{sort}. The baseline algorithm is an inspired GPU-based Radix Sort, found in Thrust's \code{stable\_sort\_by\_key} algorithm. Here, the number of threads is proportional to the number of elements in the expansion, and the total elements are distributed evenly amongst all threads, (over same rows) with each thread sorting only its sub partition. All of the sorted sub partitions are then collected within the block shared memory, and then re-sorted within the entire block. This sorts an entire row.  
 
 
 
-\item Compress: This section invokes the work found in \cite{multigrid}, and calls the Thrust function \code{reduce\_by\_key} algorithm, which for each row index $i$, the function collects all entries positioned in row $i$. The algorithm then performs "reduction" (i.e. combine consecutive terms with the same $j$ index) and outputs the compressed format. However, since it is not known at runtime which positions (i,j) have very large duplicate entries, it would be highly inefficient to assign each thread to a position (i,j) on the GPU. Instead, a scan is implemented at first to check which duplicate positions exist, and then partitions all duplicate entries into consecutive, fixed-length blocks for each thread to reduce, attempting to load balance. 
+\item Compress: This section invokes the work found in \cite{multigrid}, and calls the Thrust function \code{reduce\_by\_key} algorithm. For each row index $i$, the function collects all entries positioned in row $i$. The algorithm then performs a "reduction" operation (combines consecutive terms with the same $j$ index) and outputs the compressed format. However, since it is not known at runtime which positions (i,j) have very large duplicate entries, it would be highly inefficient to assign each thread to a position (i,j) on the GPU. Instead, a scan is implemented at first to check which duplicate positions exist. All duplicate entries are partitioned into consecutive, fixed-length blocks for each thread to reduce. Load balancing is attempted at this stage to ensure that all threads have similar workload. 
 \end{itemize}
 
 
@@ -153,50 +152,52 @@ Thus, using out all length-2 paths corresponds to a "BFS"-type tracking on this 
 \section{Experiments}
 
 \subsection{Code}
-Our code and scripts can be found on:
+\hspace{0.5cm}Our code and scripts can be found on:
 
 \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267}. The scripts used for simulation are: 
 \begin{itemize}
 \item CUSP: cusp.cu - \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/blob/master/cusp.cu}
-\item CUPY: cupy.py - \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/blob/master/cupy_script.py}
-\item Pyculib: pyculib\_script.py - \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/blob/master/pyculib_script.py}
+\item CuBLAS: cupy\_script.py - \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/blob/master/cupy_script.py}
+\item CuSPARSE: pyculib\_script.py - \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/blob/master/pyculib_script.py}
 \end{itemize}
 
 
 \subsection{Hardware}
-We applied our experiments on the following hardware specified on Amazon AWS:
+\hspace{0.5cm}We applied our experiments on the following hardware specified on Amazon AWS:
 \begin{itemize}
 \item Nvidia Tesla K80 
 \item 11.75 ECUs, 4 vCPUs, 2.7 GHz, Intel Broadwell E5-2686v4, 61 GiB memory, EBS only, with Intel AVX and Turbo allowed. 
 \end{itemize}
-Note that for this case of GPU, the memory bandwith is relatively larger than other GPU's of similar costs (480 GB/s vs 288 GB/s on a Tesla K40) 
+For the Nvidia K80 GPUs, the memory bandwith is relatively larger than other GPUs of similar cost (480 GB/s vs 288 GB/s on a Tesla K40) 
 
-\subsection{Erdos Reynii}
-We at first tested multiplication for $N \times N$ matrices, where each element was non-zero with probability $p$, where: 
+\subsection{Erdos-Renyi}
+\hspace{0.5cm}At first, we tested spare matrix multiplication on $N \times N$ square matrices, where each element of the matrix was non-zero with probability $p$. We varied the matrix dimensions and sparsities as such: 
 \begin{itemize} \item $N \in \{2^{4},...,2^{14} \}$ \item $p \in \{0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5\}$
 \end{itemize}
-Note that for floats (where a float32 is a byte), when $N = 2^{14}$, $p = 0.01$, $pN^{2} \text{(float size = 1 byte)} \approx 2 GB$, and at $N = 2^{14}, p = 0.5$, $pN^{2} \cdot \text{(float size = 1 byte)} = 134 GB$. Since the K80 RAM has 24GB of memory, this is reaches the order-magnitude of the GPU memory (i.e. for $N = 2^{15}$ sizes and higher, memory hardware limits are broken and disallowed at runtime). 
+\hspace{0.5cm}Note that for floats (where a float32 is a byte), when $N = 2^{14}$ and $p = 0.01$, $\, pN^{2} \approx 2 \, MB$, and at $N = 2^{14}$ and $p = 0.5$, $pN^{2} \approx 128 \, MB$.\\
+\hspace{0.5cm}Since the K80 RAM has 24GB of memory, for higher values of N (i.e. for $N = 2^{15}$ sizes and higher), memory hardware limits are broken and disallowed at runtime. Therefore, we had to limit $N$ and $p$ to these values when testing matrix multiplication with this method.  
 
 
 
 \subsection{Real World Data}
-Real world data matrices were also used in computation, found in \url{https://sparse.tamu.edu/}. We found the matrices that best fit the parameter (e.g. closest to a given sparsity $p$ and size $N$) The matrices used were: 
+\hspace{0.5cm}Real world data matrices were also used in computation, found in \url{https://sparse.tamu.edu/}. We found the matrices that best fit the parameter (e.g. closest to a given sparsity $p$ and size $N$). The matrices used were:
 \begin{figure}[h]
   \caption{Real World Graph Names}
   \centering 
   \includegraphics[width = 0.8\textwidth]{matrix_names.png}
-\end{figure}
-
+\end{figure}\\
+\hspace{0.5cm}The matrices could be downloaded in various formats from the database. To test on cuBLAS and cuSPARSE, we downloaded the .mat versions of the matrices from the database. Since C++ works elegantly with .mtx files, we loaded .mtx files as CUSP CSR matrices when simulating matrix multiplication in CUSP.
 
 \section{Performance and Results}
 
 
-\subsection{Erdos Reynii}
-The results for the Erdos Reynii model were completely out of expectation - for instance, cuBLAS did not increase in time complexity as we varied the size of the matrix - this is due to the fact that purely random matrices do not allow libraries to exploit their structure. Thus, we will not sketch those results in this report. However, we encourage the reader to see the results found in \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/tree/master/Erdos_Reynii_Experiments}. We saw from these experiments that cuBLAS did not show an increase in runtime regardless of $N = 2^{14}$ or $N = 2^{5}$, while cuSPARSE ran significantly slower as well. 
+\subsection{Erdos-Renyi}
+\hspace{0.5cm}The results for the Erdos-Renyi model were completely unexpected. For instance, cuBLAS and CUSP did not increase in time complexity as we varied the size of the matrix. This is because the purely random matrices generated  from python and C++ function calls do not allow the sparse matrix multiplication libraries to exploit their structure. Thus, these results are botched, and we will not sketch them in this report. However, we encourage the reader to see the results found in \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/tree/master/Erdos_Reynii_Experiments}. We saw from these experiments that cuBLAS and CUSP did not show much fluctuation in runtime regardless of the value of $N$. CuSPARSE did show an increase in runtime as the sparsity and dimension of the matrix increased, and ran significantly slower than cuBLAS and CUSP. 
 
 \subsection{Real World Data}
-We have the following colors over all graphs -  
-(Purple: CUSP, Red: CuSPARSE, Blue: cuBLAS). The graphs can be found in the Appendix ~\ref{appendix}.
+\hspace{0.5cm}Graphing matrices from the matrix dataset gave us more interesting results, which we were able to more thoroughly analyze.\\
+We ran  SpMV, CSR $\times$ Dense Matrix, and SpGEMM on CUSP, cuSPARSE, and cuBLAS. We generated dimension vs. runtime plots (and dimension vs. log(runtime) plots) for the cases at various densities. We also generated density vs. runtime plots (and density vs. log(runtime) plots) for (CSR $\times$ Dense Matrix) for $N$ = 4000 and $N$ = 8000.\\ While analyzing the graphs, please use the following for reference:
+(Purple Line: CUSP, Red Line: CuSPARSE, Blue Line: cuBLAS). The graphs can be found in the Appendix ~\ref{appendix}.
 
 \begin{comment}
 \subsubsection{cuBLAS (CuPY)}
@@ -217,25 +218,27 @@ We have the following colors over all graphs -
 \newpage 
 \end{comment}
 \subsection{Analysis}
-From the data, the most interesting trend was generated by CSR x CSR. We see that cuSPARSE did perform better than CUSP in some particular areas (CSR x CSR at p = 0.001, or CSR x DenseVector early on), but did not outperform cuBLAS in any of the experiments, although was very close in small matrix sizes. Furthermore, we also see that at higher densities, cuSPARSE did indeed increase the most, as expected. cuBLAS had a slow increase in some parts. 
+\hspace{0.5cm}From the data, the most interesting trend was generated by SpGEMM. We see that cuSPARSE did perform better than CUSP in certain simulations (CSR x CSR at p = 0.001), but did not outperform cuBLAS in any of the experiments. However, cuSPARSE's performance was very close to that of cuBLAS for small matrix sizes. Furthermore, we see that at higher densities, cuSPARSE did indeed increase most rapidly, as expected. CuBLAS had a slow increase in some parts. 
 
-For other cases (CSR $\times$ DenseVector or CSR $\times$ Dense Matrix), as expected, cuBLAS remained the most efficient (due to the dense portions)
+\hspace{0.5cm}For other cases (SpMV or CSR $\times$ Dense Matrix), as expected, cuBLAS was the most efficient, since it is better equipped to handle dense matrices.
 
-In terms of runtime, note that for very sparse matrices ($p = 0.0001$), the general trend for all algorithms seems to be sublinear. However, as we increase the density, we can see a convex curvature, as well as suggesting a quadratic runtime. This is due to the fact that increased density eventually forces the NNZ number not to approximate $O(n)$, but towards $O(n^{2})$, which is unacceptable and not intended for sparse multiplication. 
+\hspace{0.5cm}In terms of runtime, note that for very sparse matrices ($p = 0.0001$), the general trend for all algorithms seems to be sublinear. However, as we increase the density, we can see a convex curvature, suggesting a quadratic runtime. This is due to the fact that increased density eventually forces the NNZ (number of non-zeros) towards $O(n^{2})$ instead of $O(n)$. This is not intended nor acceptable for sparse matrix multiplication. 
 
 \section{Further Work}
-There is a variety of further directions that we wished to pursue, but in the interest of time, we did not. 
+\hspace{0.5cm}There are a variety of further directions that we wished to pursue, but in the interest of time and due to a lack of resources, we were unable to attempt these.
 \subsection{Measuring Components}
-It would be interesting to measure the performance of e.g. the separate expansion, sort, and compress algorithms in SpMM, to verify the claimed higher runtime of the sorting section.
+\hspace{0.5cm}It would have been interesting to measure the performance of the separate expansion, sort, and compress steps in SpGEMM, to verify the claim that the sorting step has the highest runtime. This would involve individually running each of the sub-algorithms (which come from separate papers) by themselves.
 
-\subsection{Memory Latency}
-Because different GPU architectures possess very different memory-load bandwidths, this suggests further testing for different GPUs (K80, P100, etc.) which may affect performance. There have been other variants of GPU matrix algorithms, found in 
+\subsection{Memory Bandwidth}
+\hspace{0.5cm}Because different GPU architectures possess very different memory-load bandwidths, this suggests further testing for different GPU architectures (K80, P100, etc.) which may affect performance. We could test for performance given a certain bandwidth, as well as whether use single-precision or double precision floating point arithmetic. 
 
 \subsection{Expanding Memory}
-The size of the GPU RAM restricted our experiment sizes, as any larger dimensions would have overloaded the GPU RAM. Normally, the solutions to this type of problem either feature: 1. Use different GPU's with higher RAM 2. Distribute memory and workload across multiple GPU's.
+\hspace{0.5cm}The size of the GPU RAM restricted our experiment sizes, as any larger dimensions would have overloaded the GPU RAM. Normally, the solutions to this type of problem would have been to either use different GPUs with higher RAM or to distribute memory and workload across multiple GPUs.
 
 \subsection{Different Matrix Shapes}
-Note that from well known results in random matrix theory, a Erdos-Reynii matrix can have high probability of being singular \cite{singular}. Furthermore, the Erdos-Reynii format is generally not realistic, with many matrices in real world applications having generally high block sparsity. While we tested performance on widely used datasets, we did not use the other special sparse matrix formats (e.g. COO, ELLPACK, etc.), which may affect performance as well.   
+\hspace{0.5cm}Note that from well-known results in random matrix theory, an Erdos-Renyi matrix can have high probability of being singular \cite{singular}. Furthermore, the Erdos-Renyi format is generally not realistic, with many matrices in real world applications generally having high block sparsity. While we tested performance on widely used datasets, we did not use the other special sparse matrix formats (e.g. COO, ELLPACK, etc.), which may affect performance as well. 
+
+\hspace{0.5cm}Another test can be to check sparse matrix multiplication performance on non-square matrices. For instance, $A$ and $B$ are such that $C = A \cdot B$, and $A$ and $B$ are not square.
 
 
 \newpage
@@ -248,7 +251,7 @@ Note that from well known results in random matrix theory, a Erdos-Reynii matrix
 \newpage 
 
 \begin{figure}[h]
-  \caption{CSR $\times$ CSR performance (first 4), then CSR $\times$ Dense performance (next 2), then CSR $\times$ DenseVector performance (last 4) }
+  \caption{SpGEMM performance (first 4), then CSR $\times$ Dense Matrix performance (next 2), then SpMV performance (last 4) }
   \includegraphics[scale = 0.16]{csr_csr_0001.PNG}
   \includegraphics[scale = 0.16]{csr_csr_001.PNG}
   \includegraphics[scale = 0.16]{csr_csr_01.PNG}
