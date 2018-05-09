@@ -174,8 +174,7 @@ The wrapper libraries that we attempted to use, but obsolete or failed are:
 \hspace{0.5cm}At first, we tested spare matrix multiplication on $N \times N$ square matrices, where each element of the matrix was non-zero with probability $p$. We varied the matrix dimensions and sparsities as such: 
 \begin{itemize} \item $N \in \{2^{4},...,2^{14} \}$ \item $p \in \{0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5\}$
 \end{itemize}
-\hspace{0.5cm}Note that for floats (where a float32 is a byte), when $N = 2^{14}$ and $p = 0.01$, $\, pN^{2} \approx 2 \, MB$, and at $N = 2^{14}$ and $p = 0.5$, $pN^{2} \approx 128 \, MB$.\\
-\hspace{0.5cm}Since the K80 RAM has 24GB of memory, for higher values of N (i.e. for $N = 2^{15}$ sizes and higher), memory hardware limits are broken and disallowed at runtime. Therefore, we had to limit $N$ and $p$ to these values when testing matrix multiplication with this method.  
+\hspace{0.5cm}Since the K80 RAM has 24GB of memory, for higher values of $p$ and $N$ (i.e. for $N = 2^{15}$ sizes and higher), memory hardware limits are broken and disallowed at runtime since such values would approach GPU capacity. Therefore, we had to limit $N$ and $p$ to the above values when testing matrix multiplication with this method.  
 
 
 
@@ -195,8 +194,11 @@ The wrapper libraries that we attempted to use, but obsolete or failed are:
 \hspace{0.5cm}The results for the Erdos-Renyi model were completely unexpected. For instance, cuBLAS and CUSP did not increase in time complexity as we varied the size of the matrix. This is because the purely random matrices generated  from python and C++ function calls do not allow the sparse matrix multiplication libraries to exploit their structure. Thus, these results are botched, and we will not sketch them in this report. However, we encourage the reader to see the results found in \url{https://github.com/Srizzle/GPU-Sparse-Matrix-Multiply-CS-267/tree/master/Erdos_Reynii_Experiments}. We saw from these experiments that cuBLAS and CUSP did not show much fluctuation in runtime regardless of the value of $N$. CuSPARSE did show an increase in runtime as the sparsity and dimension of the matrix increased, and ran significantly slower than cuBLAS and CUSP. 
 
 \subsection{Real World Data}
-\hspace{0.5cm}Graphing matrices from the matrix dataset gave us more interesting results, which we were able to more thoroughly analyze.\\
-We ran  SpMV, CSR $\times$ Dense Matrix, and (CSR $\times$ CSR) on CUSP, cuSPARSE, and cuBLAS. We generated dimension vs. runtime plots (and dimension vs. log(runtime) plots) for the cases at various densities. We also generated density vs. runtime plots (and density vs. log(runtime) plots) for (CSR $\times$ Dense Matrix) for $N$ = 4000 and $N$ = 8000.\\ While analyzing the graphs, please use the following for reference:
+\hspace{0.5cm}Graphing matrices from the matrix dataset gave us more interesting results, which we were able to more thoroughly analyze.
+
+\hspace{0.5cm}We ran  SpMV, CSR $\times$ Dense Matrix, and SpMM/SpGEMM on CUSP, cuSPARSE, and cuBLAS. We generated dimension vs. runtime plots (and dimension vs. log(runtime) plots) for SpMV and SpMM at various densities. We also generated density vs. runtime plots (and density vs. log(runtime) plots) for (CSR $\times$ Dense Matrix) for $N$ = 4000 and $N$ = 8000.
+
+\hspace{0.5cm}While analyzing the graphs, please use the following for reference:
 (Purple Line: CUSP, Red Line: CuSPARSE, Blue Line: cuBLAS). The graphs can be found in the Appendix ~\ref{appendix}.
 
 \begin{comment}
@@ -222,7 +224,7 @@ We ran  SpMV, CSR $\times$ Dense Matrix, and (CSR $\times$ CSR) on CUSP, cuSPARS
 
 \hspace{0.5cm}For other cases (SpMV or CSR $\times$ Dense Matrix), as expected, cuBLAS was the most efficient, since it is better equipped to handle dense matrices.
 
-\hspace{0.5cm}In terms of runtime, note that for very sparse matrices ($p = 0.0001$), the general trend for all algorithms seems to be sublinear. However, as we increase the density, we can see a convex curvature, suggesting a quadratic runtime. This is due to the fact that increased density eventually forces the NNZ (number of non-zeros) towards $O(n^{2})$ instead of $O(n)$. This is not intended nor acceptable for sparse matrix multiplication. 
+\hspace{0.5cm}In terms of runtime, note that for very sparse matrices ($p = 0.0001$), the general trend for all algorithms seems to be sublinear. However, as we increase the density, we can see a convex curvature, suggesting a quadratic runtime. This is due to the fact that increasing density eventually forces the NNZ (number of non-zeros) towards $O(n^{2})$ instead of $O(n)$. This is not intended nor acceptable for sparse matrix multiplication. 
 
 \section{Further Work}
 \hspace{0.5cm}There are a variety of further directions that we wished to pursue, but in the interest of time and due to a lack of resources, we were unable to attempt these.
